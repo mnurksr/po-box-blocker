@@ -64,6 +64,50 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 
+  // Auto-sync settings to Metafield if they just upgraded or loaded the app
+  try {
+    const { admin } = await authenticate.admin(request);
+    const shopRes = await admin.graphql(
+      `#graphql
+      query { shop { id } }`
+    );
+    const shopData = await shopRes.json();
+    const shopId = shopData.data?.shop?.id;
+    if (shopId) {
+      await admin.graphql(
+        `#graphql
+        mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafieldsSetInput) {
+            userErrors { message }
+          }
+        }`,
+        {
+          variables: {
+            metafieldsSetInput: [
+              {
+                ownerId: shopId,
+                namespace: "$app:poboxblocker",
+                key: "settings",
+                type: "json",
+                value: JSON.stringify({
+                  isEnabled: settings.isEnabled,
+                  blockedZips: settings.blockedZips,
+                  blockedStates: settings.blockedStates,
+                  blockMilitary: settings.blockMilitary,
+                  customErrorMessage: settings.customErrorMessage,
+                  regionErrorMessage: settings.regionErrorMessage,
+                  isPremium: hasActivePayment,
+                }),
+              },
+            ],
+          },
+        }
+      );
+    }
+  } catch (e) {
+    console.error("Failed to auto-sync metafields:", e);
+  }
+
   return json({ settings, hasActivePayment });
 };
 
