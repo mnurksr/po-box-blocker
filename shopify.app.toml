@@ -3,6 +3,7 @@
 client_id = "${SHOPIFY_API_KEY}"
 name = "PO Box Blocker"
 application_url = "https://poboxblocker.mercsync.com"
+embedded = true
 
 [auth]
 redirect_urls = [
@@ -26,10 +27,7 @@ api_version = "2026-04"
   topics = ["app/scopes_update"]
   uri = "/webhooks/app/scopes_update"
 
-  # P.O. Box detection – orders/create webhook
-  [[webhooks.subscriptions]]
-  topics = ["orders/create"]
-  uri = "/webhooks/orders/create"
+
 
   # Mandatory compliance webhooks for public apps
   # See: https://shopify.dev/docs/apps/build/privacy-law-compliance

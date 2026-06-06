@@ -38,37 +38,12 @@ model ShopSettings {
   id              String   @id @default(uuid())
   shop            String   @unique
   isEnabled       Boolean  @default(true)
-  autoHold        Boolean  @default(true)
-  autoTag         Boolean  @default(true)
-  tagName         String   @default("PO_BOX_ERROR")
-  sendEmail       Boolean  @default(false)
-  emailSubject    String   @default("Action Required: Please Update Your Shipping Address")
-  emailBody       String?
+  blockMilitary      Boolean  @default(true)
+  blockedZips        String?  // JSON array of zip code prefixes e.g., ["009", "PR"]
+  blockedStates      String?  // JSON array of state codes e.g., ["HI", "AK"]
+  customErrorMessage String   @default("We do not ship to P.O. Boxes. Please enter a physical address.")
   customPatterns  String?  // JSON array of additional regex patterns
   plan            String   @default("free") // "free" or "premium"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-}
-
-// Log of each flagged order
-model FlaggedOrder {
-  id              String    @id @default(uuid())
-  shop            String
-  orderId         String
-  orderNumber     String
-  customerName    String?
-  customerEmail   String?
-  flaggedAddress  String
-  matchedPattern  String
-  addressType     String    @default("shipping") // "shipping" or "billing"
-  status          String    @default("pending")   // "pending", "resolved", "ignored"
-  actionsTaken    String?   // JSON: ["held","tagged","emailed"]
-  resolvedAt      DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@index([shop])
-  @@index([orderId])
-  @@index([status])
-  @@index([createdAt])
 }

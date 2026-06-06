@@ -1,6 +1,7 @@
 {
   "name": "app",
   "private": true,
+  "packageManager": "npm@10.8.2",
   "scripts": {
     "build": "remix vite:build",
     "dev": "shopify app dev",

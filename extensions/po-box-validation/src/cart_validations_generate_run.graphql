@@ -1,0 +1,19 @@
+query RunInput {
+  cart {
+    deliveryGroups {
+      deliveryAddress {
+        address1
+        address2
+        city
+        provinceCode
+        zip
+        countryCode
+      }
+    }
+  }
+  shop {
+    metafield(namespace: "poboxblocker", key: "settings") {
+      value
+    }
+  }
+}
