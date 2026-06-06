@@ -6,6 +6,7 @@ import {
   useNavigation,
   useActionData,
 } from "@remix-run/react";
+import { MONTHLY_PLAN } from "~/shopify.server";
 import { useState, useCallback, useEffect } from "react";
 import {
   Page,
@@ -29,24 +30,70 @@ import prisma from "~/db.server";
 
 // ── Loader ──────────────────────────────────────────
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, billing } = await authenticate.admin(request);
   const shop = session.shop;
+
+  // Sync billing status
+  const billingCheck = await billing.check({
+    plans: [MONTHLY_PLAN],
+    isTest: true,
+  });
+  const hasActivePayment = billingCheck.hasActivePayment;
 
   let settings = await prisma.shopSettings.findUnique({ where: { shop } });
   if (!settings) {
     settings = await prisma.shopSettings.create({ data: { shop } });
   }
 
-  return json({ settings });
+  // Update DB if out of sync
+  if ((settings.plan === "premium") !== hasActivePayment) {
+    settings = await prisma.shopSettings.update({
+      where: { shop },
+      data: { plan: hasActivePayment ? "premium" : "free" },
+    });
+  }
+
+  return json({ settings, hasActivePayment });
 };
 
 // ── Action ──────────────────────────────────────────
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, billing } = await authenticate.admin(request);
   const shop = session.shop;
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
+
+  if (intent === "upgrade_plan") {
+    await billing.require({
+      plans: [MONTHLY_PLAN],
+      isTest: true,
+      onFailure: async () => billing.request({ plan: MONTHLY_PLAN, isTest: true }),
+    });
+    return null; // Should redirect
+  }
+
+  if (intent === "cancel_plan") {
+    const billingCheck = await billing.check({
+      plans: [MONTHLY_PLAN],
+      isTest: true,
+    });
+    
+    if (billingCheck.hasActivePayment && billingCheck.appSubscriptions[0]) {
+      const subscriptionId = billingCheck.appSubscriptions[0].id;
+      await billing.cancel({
+        subscriptionId,
+        isTest: true,
+        prorate: true,
+      });
+      // Sync DB
+      await prisma.shopSettings.update({
+        where: { shop },
+        data: { plan: "free" },
+      });
+      return json({ success: true, message: "Subscription canceled successfully." });
+    }
+  }
 
   if (intent === "save_settings") {
     const isEnabled = formData.get("isEnabled") === "true";
@@ -91,7 +138,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 // ── Component ───────────────────────────────────────
 export default function SettingsPage() {
-  const { settings } = useLoaderData<typeof loader>();
+  const { settings, hasActivePayment } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -159,7 +206,7 @@ export default function SettingsPage() {
     submit,
   ]);
 
-  const isPremium = settings.plan === "premium";
+  const isPremium = hasActivePayment;
 
   return (
     <Page
@@ -396,6 +443,32 @@ export default function SettingsPage() {
                     </Text>
                   </InlineStack>
                 </BlockStack>
+                <Box paddingBlockStart="400">
+                  {isPremium ? (
+                    <Button
+                      onClick={() => {
+                        const formData = new FormData();
+                        formData.set("intent", "cancel_plan");
+                        submit(formData, { method: "POST" });
+                      }}
+                      tone="critical"
+                      variant="plain"
+                    >
+                      Downgrade to Free
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => {
+                        const formData = new FormData();
+                        formData.set("intent", "upgrade_plan");
+                        submit(formData, { method: "POST" });
+                      }}
+                      variant="primary"
+                    >
+                      Upgrade to Premium ($5/mo)
+                    </Button>
+                  )}
+                </Box>
               </BlockStack>
             </Card>
           </Layout.AnnotatedSection>

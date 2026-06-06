@@ -7,6 +7,7 @@ import {
   formatAddress,
 } from "~/utils/pobox-detector";
 import { holdOrder, addOrderTags } from "~/utils/shopify-api";
+import { sendAddressCorrectionEmail } from "~/utils/email.server";
 
 /**
  * Webhook handler: orders/create
@@ -111,6 +112,51 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const addressType = result.matches[0]?.field.startsWith("shipping")
     ? "shipping"
     : "billing";
+
+  // Send Email
+  const customerEmail = order.customer?.email || order.email || null;
+  const customerName = order.customer
+    ? `${order.customer.first_name || ""} ${order.customer.last_name || ""}`.trim()
+    : null;
+
+  if (
+    settings.plan === "premium" &&
+    settings.sendEmail &&
+    customerEmail &&
+    settings.emailSubject &&
+    settings.emailBody
+  ) {
+    // We need to fetch the shop's email from Shopify API to set as Reply-To
+    let shopEmail = "support@mercsync.com"; // Fallback
+    try {
+      const response = await admin.graphql(`{ shop { email } }`);
+      const responseJson = await response.json();
+      if (responseJson.data?.shop?.email) {
+        shopEmail = responseJson.data.shop.email;
+      }
+    } catch (e) {
+      console.warn("Could not fetch shop email for Reply-To:", e);
+    }
+
+    const emailResult = await sendAddressCorrectionEmail({
+      to: customerEmail,
+      replyTo: shopEmail,
+      subject: settings.emailSubject,
+      bodyTemplate: settings.emailBody,
+      templateData: {
+        customer_name: customerName || "Customer",
+        order_number: String(order.order_number || order.name || ""),
+        flagged_address: flaggedAddr,
+      },
+    });
+
+    if (emailResult.success) {
+      actionsTaken.push("emailed");
+      console.log(`[PO-Box-Blocker] Email sent to ${customerEmail}`);
+    } else {
+      console.error(`[PO-Box-Blocker] Failed to send email to ${customerEmail}`, emailResult.error);
+    }
+  }
 
   // Log to database
   await prisma.flaggedOrder.create({
