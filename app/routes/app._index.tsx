@@ -301,6 +301,20 @@ export default function SettingsPage() {
       }}
     >
       <BlockStack gap="500">
+        <Banner
+          title="Action Required: Activate in Checkout Settings"
+          tone="warning"
+          action={{
+            content: "Go to Checkout Settings",
+            url: "shopify:admin/settings/checkout",
+            target: "_blank",
+          }}
+        >
+          <Text as="p">
+            Shopify requires you to manually activate checkout extensions. To make PO Box Blocker work, click the button above to open your Checkout Settings, scroll down to <strong>Checkout Rules</strong>, click <strong>Add rule</strong>, and select <strong>PO Box Blocker</strong>.
+          </Text>
+        </Banner>
+
         {/* Success/Error Banner */}
         {actionData?.success && (
           <Banner tone="success" onDismiss={() => {}}>
