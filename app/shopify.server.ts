@@ -4,6 +4,7 @@ import {
   AppDistribution,
   shopifyApp,
   BillingInterval,
+  BillingReplacementBehavior,
 } from "@shopify/shopify-app-remix/server";
 
 export const MONTHLY_PLAN = "Premium Monthly";
@@ -21,11 +22,16 @@ const shopify = shopifyApp({
   sessionStorage: new PrismaSessionStorage(prisma) as any,
   billing: {
     [MONTHLY_PLAN]: {
-      amount: 5,
-      currencyCode: "USD",
-      interval: BillingInterval.Every30Days,
+      lineItems: [
+        {
+          amount: 5,
+          currencyCode: "USD",
+          interval: BillingInterval.Every30Days,
+        },
+      ],
+      replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
-  } as any,
+  },
   distribution: AppDistribution.AppStore,
   future: {
     unstable_newEmbeddedAuthStrategy: true,

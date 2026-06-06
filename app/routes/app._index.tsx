@@ -65,12 +65,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = formData.get("intent") as string;
 
   if (intent === "upgrade_plan") {
-    await billing.require({
-      plans: [MONTHLY_PLAN],
-      isTest: true,
-      onFailure: async () => billing.request({ plan: MONTHLY_PLAN, isTest: true }),
-    });
-    return null; // Should redirect
+    try {
+      await billing.require({
+        plans: [MONTHLY_PLAN],
+        isTest: true,
+        onFailure: async () => billing.request({ plan: MONTHLY_PLAN, isTest: true }),
+      });
+      return null;
+    } catch (e: any) {
+      console.error("UPGRADE ERROR CAUGHT:", e);
+      throw e;
+    }
   }
 
   if (intent === "cancel_plan") {
