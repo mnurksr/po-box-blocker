@@ -12,7 +12,7 @@ query RunInput {
     }
   }
   shop {
-    metafield(namespace: "poboxblocker", key: "settings") {
+    metafield(namespace: "$app:poboxblocker", key: "settings") {
       value
     }
   }

@@ -1,0 +1,21 @@
+{
+  "cart": {
+    "deliveryGroups": [
+      {
+        "deliveryAddress": {
+          "address1": "Po Box 123",
+          "address2": null,
+          "city": "Aberdeen",
+          "provinceCode": "SD",
+          "zip": "57402",
+          "countryCode": "US"
+        }
+      }
+    ]
+  },
+  "shop": {
+    "metafield": {
+      "value": "{\"isEnabled\":true,\"isPremium\":true,\"blockMilitary\":true,\"customErrorMessage\":\"We do not ship to P.O. Boxes. Please enter a physical address.\"}"
+    }
+  }
+}

@@ -20,7 +20,7 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
     return { operations: [] };
   }
 
-  if (!settings.isEnabled || !settings.isPremium) {
+  if (!settings.isEnabled) {
     return { operations: [] };
   }
 
@@ -34,8 +34,8 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
   let isBlocked = false;
   let blockReason: "pobox" | "region" | null = null;
 
-  // 3. Geo-Blocking (Zip codes)
-  if (settings.blockedZips) {
+  // 3. Geo-Blocking (Zip codes) - Premium Only
+  if (settings.isPremium && settings.blockedZips) {
     try {
       const zips = JSON.parse(settings.blockedZips);
       if (Array.isArray(zips) && address.zip) {
@@ -50,8 +50,8 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
     } catch (e) {}
   }
 
-  // Geo-Blocking (States)
-  if (!isBlocked && settings.blockedStates) {
+  // Geo-Blocking (States) - Premium Only
+  if (settings.isPremium && !isBlocked && settings.blockedStates) {
     try {
       const states = JSON.parse(settings.blockedStates);
       if (Array.isArray(states) && address.provinceCode) {
@@ -63,8 +63,8 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
     } catch (e) {}
   }
 
-  // 4. Military Addresses
-  if (!isBlocked && settings.blockMilitary) {
+  // 4. Military Addresses - Premium Only
+  if (settings.isPremium && !isBlocked && settings.blockMilitary) {
     const militaryRegex = /\\b(apo|fpo|dpo)\\b/i;
     if (militaryRegex.test(fullAddress)) {
       isBlocked = true;
@@ -75,17 +75,17 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
   // 5. P.O. Box Detection
   if (!isBlocked) {
     const defaultPatterns = [
-      "p\\\\.?\\\\s*o\\\\.?\\\\s*box",
-      "post\\\\s*office\\\\s*box",
-      "p\\\\s*o\\\\s*box",
-      "pob(?:ox)?\\\\s*\\\\d+",
-      "box\\\\s*\\\\d+",
-      "bin\\\\s*\\\\d+",
-      "caller\\\\s*\\\\d+",
-      "locker\\\\s*\\\\d+",
-      "pmb\\\\s*\\\\d+",
-      "hc\\\\s*\\\\d+\\\\s*box",
-      "rr\\\\s*\\\\d+\\\\s*box"
+      "p\\.?\\s*o\\.?\\s*box",
+      "post\\s*office\\s*box",
+      "p\\s*o\\s*box",
+      "pob(?:ox)?\\s*\\d+",
+      "box\\s*\\d+",
+      "bin\\s*\\d+",
+      "caller\\s*\\d+",
+      "locker\\s*\\d+",
+      "pmb\\s*\\d+",
+      "hc\\s*\\d+\\s*box",
+      "rr\\s*\\d+\\s*box"
     ];
 
     for (const pattern of defaultPatterns) {

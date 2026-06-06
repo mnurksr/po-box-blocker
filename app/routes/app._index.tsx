@@ -149,7 +149,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               metafieldsSetInput: [
                 {
                   ownerId: shopId,
-                  namespace: "poboxblocker",
+                  namespace: "$app:poboxblocker",
                   key: "settings",
                   type: "json",
                   value: JSON.stringify({
