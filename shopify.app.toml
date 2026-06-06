@@ -1,6 +1,6 @@
 # This file stores configurations for your Shopify app.
 
-client_id = "e090635d093555362bd5d0faee63987d"
+client_id = "${SHOPIFY_API_KEY}"
 name = "PO Box Blocker"
 application_url = "https://poboxblocker.mercsync.com"
 
