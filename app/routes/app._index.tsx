@@ -89,35 +89,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
-  if (intent === "cancel_plan") {
-    const billingCheck = await billing.check({
-      plans: [MONTHLY_PLAN],
-      isTest: true,
-    });
-    
-    if (billingCheck.hasActivePayment && billingCheck.appSubscriptions[0]) {
-      const subscriptionId = billingCheck.appSubscriptions[0].id;
-      await billing.cancel({
-        subscriptionId,
-        isTest: true,
-        prorate: true,
-      });
-      // Sync DB
-      await prisma.shopSettings.update({
-        where: { shop },
-        data: { plan: "free" },
-      });
-      return json({ success: true, message: "Subscription canceled successfully." });
-    }
-  }
-
   if (intent === "save_settings") {
     const isEnabled = formData.get("isEnabled") === "true";
     const blockMilitary = formData.get("blockMilitary") === "true";
     const blockedZips = formData.get("blockedZips") as string;
     const blockedStates = formData.get("blockedStates") as string;
     const customErrorMessage = formData.get("customErrorMessage") as string;
-    const customPatterns = formData.get("customPatterns") as string;
+    const regionErrorMessage = formData.get("regionErrorMessage") as string;
 
     await prisma.shopSettings.upsert({
       where: { shop },
@@ -127,7 +105,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         blockedZips: blockedZips || undefined,
         blockedStates: blockedStates || undefined,
         customErrorMessage: customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.",
-        customPatterns: customPatterns || undefined,
+        regionErrorMessage: regionErrorMessage || "We do not ship to this region.",
       },
       create: {
         shop,
@@ -136,7 +114,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         blockedZips: blockedZips || undefined,
         blockedStates: blockedStates || undefined,
         customErrorMessage: customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.",
-        customPatterns: customPatterns || undefined,
+        regionErrorMessage: regionErrorMessage || "We do not ship to this region.",
       },
     });
 
@@ -179,8 +157,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                     blockMilitary,
                     blockedZips,
                     blockedStates,
-                    customPatterns,
                     customErrorMessage: customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.",
+                    regionErrorMessage: regionErrorMessage || "We do not ship to this region.",
                     isPremium
                   }),
                 },
@@ -213,11 +191,10 @@ export default function SettingsPage() {
   const [blockedZips, setBlockedZips] = useState<string[]>(safeParseList(settings.blockedZips));
   const [blockedStates, setBlockedStates] = useState<string[]>(safeParseList(settings.blockedStates));
   const [customErrorMessage, setCustomErrorMessage] = useState(settings.customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.");
-  const [customPatterns, setCustomPatterns] = useState<string[]>(safeParseList(settings.customPatterns));
+  const [regionErrorMessage, setRegionErrorMessage] = useState(settings.regionErrorMessage || "We do not ship to this region.");
 
   const [zipInput, setZipInput] = useState("");
   const [stateInput, setStateInput] = useState("");
-  const [patternInput, setPatternInput] = useState("");
 
   // Track if any changes were made
   const [isDirty, setIsDirty] = useState(false);
@@ -229,7 +206,7 @@ export default function SettingsPage() {
       JSON.stringify(blockedZips) !== JSON.stringify(safeParseList(settings.blockedZips)) ||
       JSON.stringify(blockedStates) !== JSON.stringify(safeParseList(settings.blockedStates)) ||
       customErrorMessage !== (settings.customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.") ||
-      JSON.stringify(customPatterns) !== JSON.stringify(safeParseList(settings.customPatterns));
+      regionErrorMessage !== (settings.regionErrorMessage || "We do not ship to this region.");
     setIsDirty(changed);
   }, [
     isEnabled,
@@ -237,7 +214,7 @@ export default function SettingsPage() {
     blockedZips,
     blockedStates,
     customErrorMessage,
-    customPatterns,
+    regionErrorMessage,
     settings,
   ]);
 
@@ -249,7 +226,7 @@ export default function SettingsPage() {
     formData.set("blockedZips", JSON.stringify(blockedZips));
     formData.set("blockedStates", JSON.stringify(blockedStates));
     formData.set("customErrorMessage", customErrorMessage);
-    formData.set("customPatterns", JSON.stringify(customPatterns));
+    formData.set("regionErrorMessage", regionErrorMessage);
     submit(formData, { method: "POST" });
   }, [
     isEnabled,
@@ -257,7 +234,7 @@ export default function SettingsPage() {
     blockedZips,
     blockedStates,
     customErrorMessage,
-    customPatterns,
+    regionErrorMessage,
     submit,
   ]);
 
@@ -331,11 +308,21 @@ export default function SettingsPage() {
                 ) : (
                   <>
                     <TextField
-                      label="Checkout Error Message"
+                      label="Checkout Error Message (P.O. Box & Military)"
                       value={customErrorMessage}
                       onChange={setCustomErrorMessage}
                       autoComplete="off"
-                      helpText="The error message shown to customers at checkout when their address is blocked."
+                      helpText="The error message shown to customers at checkout when their address is blocked because of a P.O. Box or Military Address."
+                    />
+
+                    <Divider />
+
+                    <TextField
+                      label="Checkout Error Message (State & Zip Code)"
+                      value={regionErrorMessage}
+                      onChange={setRegionErrorMessage}
+                      autoComplete="off"
+                      helpText="The error message shown when the address is blocked due to State or Zip Code rules."
                     />
 
                     <Divider />
@@ -416,63 +403,6 @@ export default function SettingsPage() {
             </Card>
           </Layout.AnnotatedSection>
 
-          {/* Custom Patterns – Premium */}
-          <Layout.AnnotatedSection
-            title={
-              <InlineStack gap="200" blockAlign="center">
-                <span>Custom Patterns</span>
-                {!isPremium && <Badge tone="attention">Premium</Badge>}
-              </InlineStack>
-            }
-            description="Add custom regex patterns to catch additional address formats specific to your business."
-          >
-            <Card>
-              <BlockStack gap="400">
-                {!isPremium ? (
-                  <Banner tone="info">
-                    <Text as="p" variant="bodySm">
-                      Custom patterns are available on the Premium plan. The
-                      built-in engine already covers 14+ P.O. Box variations
-                      including military, rural, and evasion patterns.
-                    </Text>
-                  </Banner>
-                ) : (
-                  <BlockStack gap="200">
-                    <TextField
-                      label="Custom Regex Patterns"
-                      value={patternInput}
-                      onChange={setPatternInput}
-                      autoComplete="off"
-                      placeholder="e.g. \\bcommunity\\s+box\\b"
-                      helpText="Enter a regex pattern string. These will be checked in addition to the 14 built-in patterns."
-                      connectedRight={
-                        <Button
-                          onClick={() => {
-                            if (patternInput.trim() && !customPatterns.includes(patternInput.trim())) {
-                              setCustomPatterns([...customPatterns, patternInput.trim()]);
-                              setPatternInput("");
-                            }
-                          }}
-                        >
-                          Add
-                        </Button>
-                      }
-                    />
-                    {customPatterns.length > 0 && (
-                      <InlineStack gap="200">
-                        {customPatterns.map((pattern) => (
-                          <Tag key={pattern} onRemove={() => setCustomPatterns(customPatterns.filter((p) => p !== pattern))}>
-                            {pattern}
-                          </Tag>
-                        ))}
-                      </InlineStack>
-                    )}
-                  </BlockStack>
-                )}
-              </BlockStack>
-            </Card>
-          </Layout.AnnotatedSection>
-
           {/* Plan Info */}
           <Layout.AnnotatedSection
             title="Your Plan"
@@ -522,31 +452,9 @@ export default function SettingsPage() {
                       Block by State / Zip Code
                     </Text>
                   </InlineStack>
-                  <InlineStack gap="200" blockAlign="center">
-                    <Text as="span">{isPremium ? "✅" : "🔒"}</Text>
-                    <Text
-                      as="span"
-                      variant="bodySm"
-                      tone={isPremium ? undefined : "subdued"}
-                    >
-                      Custom regex patterns
-                    </Text>
-                  </InlineStack>
                 </BlockStack>
                 <Box paddingBlockStart="400">
-                  {isPremium ? (
-                    <Button
-                      onClick={() => {
-                        const formData = new FormData();
-                        formData.set("intent", "cancel_plan");
-                        submit(formData, { method: "POST" });
-                      }}
-                      tone="critical"
-                      variant="plain"
-                    >
-                      Downgrade to Free
-                    </Button>
-                  ) : (
+                  {!isPremium && (
                     <Button
                       onClick={() => {
                         const formData = new FormData();

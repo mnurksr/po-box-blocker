@@ -32,6 +32,7 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
 
   const fullAddress = `${address.address1 || ""} ${address.address2 || ""} ${address.city || ""} ${address.provinceCode || ""} ${address.zip || ""} ${address.countryCode || ""}`.toLowerCase();
   let isBlocked = false;
+  let blockReason: "pobox" | "region" | null = null;
 
   // 3. Geo-Blocking (Zip codes)
   if (settings.blockedZips) {
@@ -41,6 +42,7 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
         for (const zipPrefix of zips) {
           if (address.zip.startsWith(zipPrefix)) {
             isBlocked = true;
+            blockReason = "region";
             break;
           }
         }
@@ -55,6 +57,7 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
       if (Array.isArray(states) && address.provinceCode) {
         if (states.includes(address.provinceCode)) {
           isBlocked = true;
+          blockReason = "region";
         }
       }
     } catch (e) {}
@@ -65,6 +68,7 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
     const militaryRegex = /\\b(apo|fpo|dpo)\\b/i;
     if (militaryRegex.test(fullAddress)) {
       isBlocked = true;
+      blockReason = "pobox";
     }
   }
 
@@ -84,22 +88,12 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
       "rr\\\\s*\\\\d+\\\\s*box"
     ];
 
-    let patternsToCheck = [...defaultPatterns];
-
-    if (settings.customPatterns) {
-      try {
-        const custom = JSON.parse(settings.customPatterns);
-        if (Array.isArray(custom)) {
-          patternsToCheck = patternsToCheck.concat(custom);
-        }
-      } catch (e) {}
-    }
-
-    for (const pattern of patternsToCheck) {
+    for (const pattern of defaultPatterns) {
       try {
         const regex = new RegExp(pattern, "i");
         if (regex.test(fullAddress)) {
           isBlocked = true;
+          blockReason = "pobox";
           break;
         }
       } catch (e) {}
@@ -107,8 +101,14 @@ export function run(input: RunInput): CartValidationsGenerateRunResult {
   }
 
   if (isBlocked) {
+    let errorMessage = settings.customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.";
+    
+    if (blockReason === "region") {
+      errorMessage = settings.regionErrorMessage || "We do not ship to this region.";
+    }
+
     errors.push({
-      message: settings.customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.",
+      message: errorMessage,
       target: "$.cart.deliveryGroups[0].deliveryAddress.address1",
     });
   }

@@ -42,7 +42,7 @@ model ShopSettings {
   blockedZips        String?  // JSON array of zip code prefixes e.g., ["009", "PR"]
   blockedStates      String?  // JSON array of state codes e.g., ["HI", "AK"]
   customErrorMessage String   @default("We do not ship to P.O. Boxes. Please enter a physical address.")
-  customPatterns  String?  // JSON array of additional regex patterns
+  regionErrorMessage String   @default("We do not ship to this region.")
   plan            String   @default("free") // "free" or "premium"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
