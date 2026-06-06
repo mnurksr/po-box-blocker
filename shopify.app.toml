@@ -1,6 +1,13 @@
 # This file stores configurations for your Shopify app.
 
-client_id = ""
+client_id = "e090635d093555362bd5d0faee63987d"
+name = "PO Box Blocker"
+application_url = "https://poboxblocker.mercsync.com"
+
+[auth]
+redirect_urls = [
+  "https://poboxblocker.mercsync.com/auth/callback",
+]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
