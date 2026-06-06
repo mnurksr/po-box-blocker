@@ -23,10 +23,21 @@ import {
   Divider,
   Box,
   Tooltip,
+  Tag,
 } from "@shopify/polaris";
 
 import { authenticate } from "~/shopify.server";
 import prisma from "~/db.server";
+
+function safeParseList(str: string | null | undefined): string[] {
+  if (!str) return [];
+  try {
+    const parsed = JSON.parse(str);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 // ── Loader ──────────────────────────────────────────
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -199,10 +210,14 @@ export default function SettingsPage() {
   // Local state (mirrors DB settings)
   const [isEnabled, setIsEnabled] = useState(settings.isEnabled);
   const [blockMilitary, setBlockMilitary] = useState(settings.blockMilitary ?? true);
-  const [blockedZips, setBlockedZips] = useState(settings.blockedZips || "");
-  const [blockedStates, setBlockedStates] = useState(settings.blockedStates || "");
+  const [blockedZips, setBlockedZips] = useState<string[]>(safeParseList(settings.blockedZips));
+  const [blockedStates, setBlockedStates] = useState<string[]>(safeParseList(settings.blockedStates));
   const [customErrorMessage, setCustomErrorMessage] = useState(settings.customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.");
-  const [customPatterns, setCustomPatterns] = useState(settings.customPatterns || "");
+  const [customPatterns, setCustomPatterns] = useState<string[]>(safeParseList(settings.customPatterns));
+
+  const [zipInput, setZipInput] = useState("");
+  const [stateInput, setStateInput] = useState("");
+  const [patternInput, setPatternInput] = useState("");
 
   // Track if any changes were made
   const [isDirty, setIsDirty] = useState(false);
@@ -211,10 +226,10 @@ export default function SettingsPage() {
     const changed =
       isEnabled !== settings.isEnabled ||
       blockMilitary !== (settings.blockMilitary ?? true) ||
-      blockedZips !== (settings.blockedZips || "") ||
-      blockedStates !== (settings.blockedStates || "") ||
+      JSON.stringify(blockedZips) !== JSON.stringify(safeParseList(settings.blockedZips)) ||
+      JSON.stringify(blockedStates) !== JSON.stringify(safeParseList(settings.blockedStates)) ||
       customErrorMessage !== (settings.customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.") ||
-      customPatterns !== (settings.customPatterns || "");
+      JSON.stringify(customPatterns) !== JSON.stringify(safeParseList(settings.customPatterns));
     setIsDirty(changed);
   }, [
     isEnabled,
@@ -231,10 +246,10 @@ export default function SettingsPage() {
     formData.set("intent", "save_settings");
     formData.set("isEnabled", String(isEnabled));
     formData.set("blockMilitary", String(blockMilitary));
-    formData.set("blockedZips", blockedZips);
-    formData.set("blockedStates", blockedStates);
+    formData.set("blockedZips", JSON.stringify(blockedZips));
+    formData.set("blockedStates", JSON.stringify(blockedStates));
     formData.set("customErrorMessage", customErrorMessage);
-    formData.set("customPatterns", customPatterns);
+    formData.set("customPatterns", JSON.stringify(customPatterns));
     submit(formData, { method: "POST" });
   }, [
     isEnabled,
@@ -332,25 +347,69 @@ export default function SettingsPage() {
                       onChange={setBlockMilitary}
                     />
 
-                    <TextField
-                      label="Blocked Zip Codes (JSON array)"
-                      value={blockedZips}
-                      onChange={setBlockedZips}
-                      autoComplete="off"
-                      multiline={2}
-                      placeholder='["009", "PR"]'
-                      helpText='Enter a JSON array of zip code prefixes to block (e.g. ["009"] for Puerto Rico).'
-                    />
+                    <BlockStack gap="200">
+                      <TextField
+                        label="Blocked Zip Codes"
+                        value={zipInput}
+                        onChange={setZipInput}
+                        autoComplete="off"
+                        placeholder="e.g. 009"
+                        helpText="Enter a zip code prefix to block (e.g. 009 for Puerto Rico)."
+                        connectedRight={
+                          <Button
+                            onClick={() => {
+                              if (zipInput.trim() && !blockedZips.includes(zipInput.trim())) {
+                                setBlockedZips([...blockedZips, zipInput.trim()]);
+                                setZipInput("");
+                              }
+                            }}
+                          >
+                            Add
+                          </Button>
+                        }
+                      />
+                      {blockedZips.length > 0 && (
+                        <InlineStack gap="200">
+                          {blockedZips.map((zip) => (
+                            <Tag key={zip} onRemove={() => setBlockedZips(blockedZips.filter((z) => z !== zip))}>
+                              {zip}
+                            </Tag>
+                          ))}
+                        </InlineStack>
+                      )}
+                    </BlockStack>
 
-                    <TextField
-                      label="Blocked States (JSON array)"
-                      value={blockedStates}
-                      onChange={setBlockedStates}
-                      autoComplete="off"
-                      multiline={2}
-                      placeholder='["HI", "AK"]'
-                      helpText='Enter a JSON array of state codes to block (e.g. ["HI", "AK"] for Hawaii/Alaska).'
-                    />
+                    <BlockStack gap="200">
+                      <TextField
+                        label="Blocked States"
+                        value={stateInput}
+                        onChange={setStateInput}
+                        autoComplete="off"
+                        placeholder="e.g. HI"
+                        helpText="Enter a state code to block (e.g. HI for Hawaii)."
+                        connectedRight={
+                          <Button
+                            onClick={() => {
+                              if (stateInput.trim() && !blockedStates.includes(stateInput.trim().toUpperCase())) {
+                                setBlockedStates([...blockedStates, stateInput.trim().toUpperCase()]);
+                                setStateInput("");
+                              }
+                            }}
+                          >
+                            Add
+                          </Button>
+                        }
+                      />
+                      {blockedStates.length > 0 && (
+                        <InlineStack gap="200">
+                          {blockedStates.map((st) => (
+                            <Tag key={st} onRemove={() => setBlockedStates(blockedStates.filter((s) => s !== st))}>
+                              {st}
+                            </Tag>
+                          ))}
+                        </InlineStack>
+                      )}
+                    </BlockStack>
                   </>
                 )}
               </BlockStack>
@@ -378,15 +437,37 @@ export default function SettingsPage() {
                     </Text>
                   </Banner>
                 ) : (
-                  <TextField
-                    label="Custom regex patterns (JSON array)"
-                    value={customPatterns}
-                    onChange={setCustomPatterns}
-                    autoComplete="off"
-                    multiline={4}
-                    placeholder='["\\\\bgeneral\\\\s+delivery\\\\b", "\\\\bcommunity\\\\s+box\\\\b"]'
-                    helpText="Enter a JSON array of regex pattern strings. These will be checked in addition to the 14 built-in patterns."
-                  />
+                  <BlockStack gap="200">
+                    <TextField
+                      label="Custom Regex Patterns"
+                      value={patternInput}
+                      onChange={setPatternInput}
+                      autoComplete="off"
+                      placeholder="e.g. \\bcommunity\\s+box\\b"
+                      helpText="Enter a regex pattern string. These will be checked in addition to the 14 built-in patterns."
+                      connectedRight={
+                        <Button
+                          onClick={() => {
+                            if (patternInput.trim() && !customPatterns.includes(patternInput.trim())) {
+                              setCustomPatterns([...customPatterns, patternInput.trim()]);
+                              setPatternInput("");
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      }
+                    />
+                    {customPatterns.length > 0 && (
+                      <InlineStack gap="200">
+                        {customPatterns.map((pattern) => (
+                          <Tag key={pattern} onRemove={() => setCustomPatterns(customPatterns.filter((p) => p !== pattern))}>
+                            {pattern}
+                          </Tag>
+                        ))}
+                      </InlineStack>
+                    )}
+                  </BlockStack>
                 )}
               </BlockStack>
             </Card>
