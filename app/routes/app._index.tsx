@@ -123,18 +123,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const isPremium = billingCheck.hasActivePayment;
 
     try {
-      const appInstallRes = await admin.graphql(
+      const shopRes = await admin.graphql(
         `#graphql
         query {
-          currentAppInstallation {
+          shop {
             id
           }
         }`
       );
-      const appInstallData = await appInstallRes.json();
-      const appInstallationId = appInstallData.data?.currentAppInstallation?.id;
+      const shopData = await shopRes.json();
+      const shopId = shopData.data?.shop?.id;
 
-      if (appInstallationId) {
+      if (shopId) {
         await admin.graphql(
           `#graphql
           mutation CreateAppDataMetafield($metafieldsSetInput: [MetafieldsSetInput!]!) {
@@ -148,7 +148,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             variables: {
               metafieldsSetInput: [
                 {
-                  ownerId: appInstallationId,
+                  ownerId: shopId,
                   namespace: "poboxblocker",
                   key: "settings",
                   type: "json",
@@ -166,6 +166,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
           }
         );
+        const resJson = await res.json();
+        if (resJson.data?.metafieldsSet?.userErrors?.length) {
+          console.error("Metafield user errors:", resJson.data.metafieldsSet.userErrors);
+        } else {
+          console.log("Metafield successfully updated!");
+        }
       }
     } catch (error) {
       console.error("Failed to update metafields:", error);

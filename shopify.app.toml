@@ -12,7 +12,7 @@ redirect_urls = [
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_orders,read_orders"
+scopes = "write_orders,read_orders,write_metafields,read_metafields"
 
 [webhooks]
 api_version = "2026-04"
