@@ -58,7 +58,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 // ── Action ──────────────────────────────────────────
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, billing } = await authenticate.admin(request);
+  const { session, billing, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   const formData = await request.formData();

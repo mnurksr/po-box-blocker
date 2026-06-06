@@ -1,10 +1,10 @@
 import type {
-  CartValidationsGenerateRunInput,
+  RunInput,
   CartValidationsGenerateRunResult,
   ValidationError,
 } from "../generated/api";
 
-export function cartValidationsGenerateRun(input: CartValidationsGenerateRunInput): CartValidationsGenerateRunResult {
+export function run(input: RunInput): CartValidationsGenerateRunResult {
   const errors: ValidationError[] = [];
 
   // 1. Parse Settings from Metafield

@@ -12,7 +12,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   console.log(`[PO-Box-Blocker] shop/redact received for shop=${shop}`);
 
   // Delete all shop data
-  await prisma.flaggedOrder.deleteMany({ where: { shop } });
   await prisma.shopSettings.deleteMany({ where: { shop } });
 
   console.log(`[PO-Box-Blocker] All data deleted for shop=${shop}`);
