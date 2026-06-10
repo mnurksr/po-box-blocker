@@ -51,17 +51,35 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
   const hasActivePayment = billingCheck.hasActivePayment;
 
-  let settings = await prisma.shopSettings.findUnique({ where: { shop } });
-  if (!settings) {
-    settings = await prisma.shopSettings.create({ data: { shop } });
-  }
+  let settings = {
+    isEnabled: true,
+    plan: "free",
+    blockedZips: "",
+    blockedStates: "",
+    blockMilitary: true,
+    customErrorMessage: "We do not ship to P.O. Boxes. Please enter a physical address.",
+    regionErrorMessage: "We do not ship to this region.",
+    hasDismissedOnboarding: false,
+  };
 
-  // Update DB if out of sync
-  if ((settings.plan === "premium") !== hasActivePayment) {
-    settings = await prisma.shopSettings.update({
-      where: { shop },
-      data: { plan: hasActivePayment ? "premium" : "free" },
-    });
+  try {
+    let dbSettings = await prisma.shopSettings.findUnique({ where: { shop } });
+    if (!dbSettings) {
+      dbSettings = await prisma.shopSettings.create({ data: { shop } });
+    }
+
+    // Update DB if out of sync
+    if ((dbSettings.plan === "premium") !== hasActivePayment) {
+      dbSettings = await prisma.shopSettings.update({
+        where: { shop },
+        data: { plan: hasActivePayment ? "premium" : "free" },
+      });
+    }
+    settings = dbSettings;
+  } catch (e) {
+    console.error("Prisma Error:", e);
+    // Fallback to defaults if DB fails
+    settings.plan = hasActivePayment ? "premium" : "free";
   }
 
   // Fetch the function ID to create a deep link
