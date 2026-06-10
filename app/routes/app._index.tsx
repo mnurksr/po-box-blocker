@@ -351,11 +351,14 @@ export default function SettingsPage() {
           <Banner
             title="Action Required: Activate in Checkout Settings"
             tone="warning"
-            onDismiss={handleDismissOnboarding}
             action={{
-              content: "Go to Checkout Settings",
+              content: "1. Go to Checkout Settings",
               url: deepLinkUrl,
               target: "_blank",
+            }}
+            secondaryAction={{
+              content: "2. I've Activated It (Hide this)",
+              onAction: handleDismissOnboarding,
             }}
           >
             <Text as="p">
