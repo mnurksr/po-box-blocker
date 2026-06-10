@@ -43,6 +43,7 @@ model ShopSettings {
   blockedStates      String?  // JSON array of state codes e.g., ["HI", "AK"]
   customErrorMessage String   @default("We do not ship to P.O. Boxes. Please enter a physical address.")
   regionErrorMessage String   @default("We do not ship to this region.")
+  hasDismissedOnboarding Boolean @default(false)
   plan            String   @default("free") // "free" or "premium"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

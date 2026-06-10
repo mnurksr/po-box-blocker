@@ -64,6 +64,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 
+  // Fetch the function ID to create a deep link
+  let functionId = null;
+  try {
+    const { admin } = await authenticate.admin(request);
+    const funcRes = await admin.graphql(
+      `#graphql
+      query {
+        app {
+          installation {
+            id
+          }
+        }
+        shopifyFunctions(first: 1) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }`
+    );
+    const funcData = await funcRes.json();
+    const idString = funcData.data?.shopifyFunctions?.edges?.[0]?.node?.id;
+    if (idString) {
+      // Extract the UUID part from gid://shopify/AppFunction/UUID
+      functionId = idString.split("/").pop();
+    }
+  } catch (e) {
+    console.error("Failed to fetch function ID:", e);
+  }
+
   // Auto-sync settings to Metafield if they just upgraded or loaded the app
   try {
     const { admin } = await authenticate.admin(request);
@@ -108,7 +139,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.error("Failed to auto-sync metafields:", e);
   }
 
-  return json({ settings, hasActivePayment });
+  return json({ settings, hasActivePayment, functionId });
 };
 
 // ── Action ──────────────────────────────────────────
@@ -118,6 +149,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
+
+  if (intent === "dismiss_onboarding") {
+    await prisma.shopSettings.update({
+      where: { shop },
+      data: { hasDismissedOnboarding: true },
+    });
+    return json({ success: true });
+  }
 
   if (intent === "upgrade_plan") {
     try {
@@ -288,6 +327,13 @@ export default function SettingsPage() {
     submit,
   ]);
 
+  const handleDismissOnboarding = () => {
+    setShowOnboarding(false);
+    const formData = new FormData();
+    formData.set("intent", "dismiss_onboarding");
+    submit(formData, { method: "POST" });
+  };
+
   const isPremium = hasActivePayment;
 
   return (
@@ -301,19 +347,22 @@ export default function SettingsPage() {
       }}
     >
       <BlockStack gap="500">
-        <Banner
-          title="Action Required: Activate in Checkout Settings"
-          tone="warning"
-          action={{
-            content: "Go to Checkout Settings",
-            url: "shopify:admin/settings/checkout",
-            target: "_blank",
-          }}
-        >
-          <Text as="p">
-            Shopify requires you to manually activate checkout extensions. To make PO Box Blocker work, click the button above to open your Checkout Settings, scroll down to <strong>Checkout Rules</strong>, click <strong>Add rule</strong>, and select <strong>PO Box Blocker</strong>.
-          </Text>
-        </Banner>
+        {showOnboarding && (
+          <Banner
+            title="Action Required: Activate in Checkout Settings"
+            tone="warning"
+            onDismiss={handleDismissOnboarding}
+            action={{
+              content: "Go to Checkout Settings",
+              url: deepLinkUrl,
+              target: "_blank",
+            }}
+          >
+            <Text as="p">
+              Shopify requires you to manually activate checkout extensions. To make PO Box Blocker work, click the button above to open your Checkout Settings, scroll down to <strong>Checkout Rules</strong>, click <strong>Add rule</strong>, and select <strong>PO Box Blocker</strong>.
+            </Text>
+          </Banner>
+        )}
 
         {/* Success/Error Banner */}
         {actionData?.success && (
