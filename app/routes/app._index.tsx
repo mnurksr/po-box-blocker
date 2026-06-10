@@ -41,7 +41,7 @@ function safeParseList(str: string | null | undefined): string[] {
 
 // ── Loader ──────────────────────────────────────────
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, billing } = await authenticate.admin(request);
+  const { session, billing, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   // Sync billing status
@@ -67,7 +67,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Fetch the function ID to create a deep link
   let functionId = null;
   try {
-    const { admin } = await authenticate.admin(request);
     const funcRes = await admin.graphql(
       `#graphql
       query {
@@ -97,7 +96,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Auto-sync settings to Metafield if they just upgraded or loaded the app
   try {
-    const { admin } = await authenticate.admin(request);
     const shopRes = await admin.graphql(
       `#graphql
       query { shop { id } }`
