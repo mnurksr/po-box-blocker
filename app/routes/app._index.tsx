@@ -284,11 +284,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 // ── Component ───────────────────────────────────────
 export default function SettingsPage() {
-  const { settings, hasActivePayment } = useLoaderData<typeof loader>();
+  const { settings, hasActivePayment, functionId } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+
+  // Derive deep link url
+  const deepLinkUrl = functionId 
+    ? `shopify:admin/settings/checkout/rules/validation/add/${functionId}`
+    : "shopify:admin/settings/checkout";
 
   // Local state (mirrors DB settings)
   const [isEnabled, setIsEnabled] = useState(settings.isEnabled);
@@ -297,6 +302,7 @@ export default function SettingsPage() {
   const [blockedStates, setBlockedStates] = useState<string[]>(safeParseList(settings.blockedStates));
   const [customErrorMessage, setCustomErrorMessage] = useState(settings.customErrorMessage || "We do not ship to P.O. Boxes. Please enter a physical address.");
   const [regionErrorMessage, setRegionErrorMessage] = useState(settings.regionErrorMessage || "We do not ship to this region.");
+  const [showOnboarding, setShowOnboarding] = useState(!settings.hasDismissedOnboarding);
 
   const [zipInput, setZipInput] = useState("");
   const [stateInput, setStateInput] = useState("");
