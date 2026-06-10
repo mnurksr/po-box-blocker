@@ -7,7 +7,8 @@ import {
   BillingReplacementBehavior,
 } from "@shopify/shopify-app-remix/server";
 
-export const MONTHLY_PLAN = "Premium Monthly";
+export const STANDARD_PLAN = "po-blocker-standart";
+export const PREMIUM_PLAN = "po-blocker-premium";
 
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
@@ -21,7 +22,18 @@ const shopify = shopifyApp({
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma) as any,
   billing: {
-    [MONTHLY_PLAN]: {
+    [STANDARD_PLAN]: {
+      lineItems: [
+        {
+          amount: 2,
+          currencyCode: "USD",
+          interval: BillingInterval.Every30Days,
+        },
+      ],
+      trialDays: 3,
+      replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
+    },
+    [PREMIUM_PLAN]: {
       lineItems: [
         {
           amount: 5,

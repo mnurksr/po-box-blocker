@@ -6,7 +6,7 @@ import {
   useNavigation,
   useActionData,
 } from "@remix-run/react";
-import { MONTHLY_PLAN } from "~/shopify.server";
+import { STANDARD_PLAN, PREMIUM_PLAN } from "~/shopify.server";
 import { useState, useCallback, useEffect } from "react";
 import {
   Page,
@@ -46,14 +46,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Sync billing status
   const billingCheck = await billing.check({
-    plans: [MONTHLY_PLAN],
+    plans: [STANDARD_PLAN, PREMIUM_PLAN],
     isTest: true,
   });
-  const hasActivePayment = billingCheck.hasActivePayment;
+  
+  const hasPremium = billingCheck.appSubscriptions?.some(sub => sub.name === PREMIUM_PLAN) || false;
+  const hasStandard = billingCheck.appSubscriptions?.some(sub => sub.name === STANDARD_PLAN) || false;
+  
+  let activePlan = "none";
+  if (hasPremium) activePlan = "premium";
+  else if (hasStandard) activePlan = "standart";
 
   let settings = {
     isEnabled: true,
-    plan: "free",
+    plan: "none",
     blockedZips: "",
     blockedStates: "",
     blockMilitary: true,
@@ -69,17 +75,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     // Update DB if out of sync
-    if ((dbSettings.plan === "premium") !== hasActivePayment) {
+    if (dbSettings.plan !== activePlan) {
       dbSettings = await prisma.shopSettings.update({
         where: { shop },
-        data: { plan: hasActivePayment ? "premium" : "free" },
+        data: { plan: activePlan },
       });
     }
     settings = dbSettings;
   } catch (e) {
     console.error("Prisma Error:", e);
     // Fallback to defaults if DB fails
-    settings.plan = hasActivePayment ? "premium" : "free";
+    settings.plan = activePlan;
   }
 
   // Fetch the function ID to create a deep link
@@ -143,7 +149,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
                   blockMilitary: settings.blockMilitary,
                   customErrorMessage: settings.customErrorMessage,
                   regionErrorMessage: settings.regionErrorMessage,
-                  isPremium: hasActivePayment,
+                  isPremium: hasPremium,
                 }),
               },
             ],
@@ -155,7 +161,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.error("Failed to auto-sync metafields:", e);
   }
 
-  return json({ settings, hasActivePayment, functionId });
+  return json({ settings, activePlan, functionId });
 };
 
 // ── Action ──────────────────────────────────────────
@@ -174,12 +180,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ success: true });
   }
 
-  if (intent === "upgrade_plan") {
+  if (intent === "upgrade_to_premium") {
     try {
       await billing.require({
-        plans: [MONTHLY_PLAN],
+        plans: [PREMIUM_PLAN],
         isTest: true,
-        onFailure: async () => billing.request({ plan: MONTHLY_PLAN, isTest: true }),
+        onFailure: async () => billing.request({ plan: PREMIUM_PLAN, isTest: true }),
+      });
+      return null;
+    } catch (e: any) {
+      console.error("UPGRADE ERROR CAUGHT:", e);
+      throw e;
+    }
+  }
+
+  if (intent === "upgrade_to_standart") {
+    try {
+      await billing.require({
+        plans: [STANDARD_PLAN],
+        isTest: true,
+        onFailure: async () => billing.request({ plan: STANDARD_PLAN, isTest: true }),
       });
       return null;
     } catch (e: any) {
@@ -218,8 +238,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     // Write settings to AppInstallation Metafield for Checkout Validation Extension
-    const billingCheck = await billing.check({ plans: [MONTHLY_PLAN], isTest: true });
-    const isPremium = billingCheck.hasActivePayment;
+    const billingCheck = await billing.check({ plans: [STANDARD_PLAN, PREMIUM_PLAN], isTest: true });
+    const isPremium = billingCheck.appSubscriptions?.some(sub => sub.name === PREMIUM_PLAN) || false;
 
     try {
       const shopRes = await admin.graphql(
@@ -284,7 +304,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 // ── Component ───────────────────────────────────────
 export default function SettingsPage() {
-  const { settings, hasActivePayment, functionId } = useLoaderData<typeof loader>();
+  const { settings, activePlan, functionId } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -356,7 +376,61 @@ export default function SettingsPage() {
     submit(formData, { method: "POST" });
   };
 
-  const isPremium = hasActivePayment;
+  const isPremium = activePlan === "premium";
+  const isStandard = activePlan === "standart";
+  const hasPlan = isPremium || isStandard;
+
+  if (!hasPlan) {
+    return (
+      <Page title="Select a Plan">
+        <Layout>
+          <Layout.Section>
+            <BlockStack gap="500">
+              <Text as="h1" variant="headingLg">Choose a Plan to Continue</Text>
+              <InlineStack gap="400">
+                <Card>
+                  <BlockStack gap="400">
+                    <Text as="h2" variant="headingMd">Standard Plan</Text>
+                    <Text as="p" variant="headingXl">$2 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
+                    <Text as="p" tone="subdued">Includes a 3-day free trial.</Text>
+                    <Divider />
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">P.O. Box detection</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Real-time validation</Text></InlineStack>
+                    </BlockStack>
+                    <Button onClick={() => {
+                          const formData = new FormData();
+                          formData.set("intent", "upgrade_to_standart");
+                          submit(formData, { method: "POST" });
+                        }} variant="primary" loading={isSubmitting}>Start 3-Day Trial</Button>
+                  </BlockStack>
+                </Card>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <Text as="h2" variant="headingMd">Premium Plan</Text>
+                    <Text as="p" variant="headingXl">$5 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
+                    <Text as="p" tone="subdued">Advanced protection.</Text>
+                    <Divider />
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Everything in Standard</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Block Military Addresses</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Block by State / Zip Code</Text></InlineStack>
+                    </BlockStack>
+                    <Button onClick={() => {
+                          const formData = new FormData();
+                          formData.set("intent", "upgrade_to_premium");
+                          submit(formData, { method: "POST" });
+                        }} variant="primary" loading={isSubmitting}>Subscribe for $5</Button>
+                  </BlockStack>
+                </Card>
+              </InlineStack>
+            </BlockStack>
+          </Layout.Section>
+        </Layout>
+      </Page>
+    );
+  }
 
   return (
     <Page
@@ -384,7 +458,7 @@ export default function SettingsPage() {
             }}
           >
             <Text as="p">
-              Shopify requires you to manually activate checkout extensions. To make PO Box Blocker work, click the button above to open your Checkout Settings, scroll down to <strong>Checkout Rules</strong>, click <strong>Add rule</strong>, and select <strong>PO Box Blocker</strong>.
+              Shopify requires you to manually activate checkout extensions. To make PO Box Blocker work, click the button above to open the rule creation page. Give it a title (like <strong>PO Box Blocker</strong>), set the status to <strong>Active</strong>, and click <strong>Save</strong>.
             </Text>
           </Banner>
         )}
@@ -440,7 +514,7 @@ export default function SettingsPage() {
                   <Banner tone="info">
                     <Text as="p" variant="bodySm">
                       Advanced blocking features are available on the Premium plan.
-                      Upgrade to block P.O. Boxes directly at the checkout screen, and to restrict delivery to specific regions.
+                      Upgrade to block Military Addresses and specific states or zip codes.
                     </Text>
                   </Banner>
                 ) : (
@@ -550,10 +624,10 @@ export default function SettingsPage() {
               <BlockStack gap="300">
                 <InlineStack align="space-between" blockAlign="center">
                   <Text as="h3" variant="headingMd">
-                    {isPremium ? "Premium Plan" : "Free Plan"}
+                    {isPremium ? "Premium Plan" : "Standard Plan"}
                   </Text>
                   <Badge tone={isPremium ? "success" : "info"}>
-                    {isPremium ? "PREMIUM" : "FREE"}
+                    {isPremium ? "PREMIUM ($5/mo)" : "STANDARD ($2/mo)"}
                   </Badge>
                 </InlineStack>
                 <Divider />
@@ -596,7 +670,7 @@ export default function SettingsPage() {
                     <Button
                       onClick={() => {
                         const formData = new FormData();
-                        formData.set("intent", "upgrade_plan");
+                        formData.set("intent", "upgrade_to_premium");
                         submit(formData, { method: "POST" });
                       }}
                       variant="primary"
