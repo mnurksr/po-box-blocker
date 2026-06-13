@@ -25,22 +25,23 @@ const shopify = shopifyApp({
     [STANDARD_PLAN]: {
       lineItems: [
         {
-          amount: 2,
+          amount: 4.99,
           currencyCode: "USD",
           interval: BillingInterval.Every30Days,
         },
       ],
-      trialDays: 3,
+      trialDays: 14,
       replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
     [PREMIUM_PLAN]: {
       lineItems: [
         {
-          amount: 5,
+          amount: 9.99,
           currencyCode: "USD",
           interval: BillingInterval.Every30Days,
         },
       ],
+      trialDays: 14,
       replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
   },

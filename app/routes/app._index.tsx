@@ -391,8 +391,8 @@ export default function SettingsPage() {
                 <Card>
                   <BlockStack gap="400">
                     <Text as="h2" variant="headingMd">Standard Plan</Text>
-                    <Text as="p" variant="headingXl">$2 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
-                    <Text as="p" tone="subdued">Includes a 3-day free trial.</Text>
+                    <Text as="p" variant="headingXl">$4.99 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
+                    <Text as="p" tone="subdued">Includes a 14-day free trial.</Text>
                     <Divider />
                     <BlockStack gap="200">
                       <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">P.O. Box detection</Text></InlineStack>
@@ -402,15 +402,15 @@ export default function SettingsPage() {
                           const formData = new FormData();
                           formData.set("intent", "upgrade_to_standart");
                           submit(formData, { method: "POST" });
-                        }} variant="primary" loading={isSubmitting}>Start 3-Day Trial</Button>
+                        }} variant="primary" loading={isSubmitting}>Start 14-Day Trial</Button>
                   </BlockStack>
                 </Card>
 
                 <Card>
                   <BlockStack gap="400">
                     <Text as="h2" variant="headingMd">Premium Plan</Text>
-                    <Text as="p" variant="headingXl">$5 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
-                    <Text as="p" tone="subdued">Advanced protection.</Text>
+                    <Text as="p" variant="headingXl">$9.99 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
+                    <Text as="p" tone="subdued">Advanced protection. Includes a 14-day free trial.</Text>
                     <Divider />
                     <BlockStack gap="200">
                       <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Everything in Standard</Text></InlineStack>
@@ -421,7 +421,7 @@ export default function SettingsPage() {
                           const formData = new FormData();
                           formData.set("intent", "upgrade_to_premium");
                           submit(formData, { method: "POST" });
-                        }} variant="primary" loading={isSubmitting}>Subscribe for $5</Button>
+                        }} variant="primary" loading={isSubmitting}>Start 14-Day Trial</Button>
                   </BlockStack>
                 </Card>
               </InlineStack>
@@ -627,7 +627,7 @@ export default function SettingsPage() {
                     {isPremium ? "Premium Plan" : "Standard Plan"}
                   </Text>
                   <Badge tone={isPremium ? "success" : "info"}>
-                    {isPremium ? "PREMIUM ($5/mo)" : "STANDARD ($2/mo)"}
+                    {isPremium ? "PREMIUM ($9.99/mo)" : "STANDARD ($4.99/mo)"}
                   </Badge>
                 </InlineStack>
                 <Divider />
@@ -675,7 +675,7 @@ export default function SettingsPage() {
                       }}
                       variant="primary"
                     >
-                      Upgrade to Premium ($5/mo)
+                      Upgrade to Premium ($9.99/mo)
                     </Button>
                   )}
                 </Box>
