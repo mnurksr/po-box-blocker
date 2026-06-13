@@ -420,9 +420,9 @@ export default function SettingsPage() {
                     </Button>
                     <Divider />
                     <BlockStack gap="300">
-                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">P.O. Box detection (14+ patterns)</Text></InlineStack>
-                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Real-time checkout validation</Text></InlineStack>
-                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Customizable error messages</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block P.O. Boxes natively at checkout</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Advanced 14+ detection patterns</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Email Support</Text></InlineStack>
                     </BlockStack>
                   </BlockStack>
                 </Card>
@@ -453,10 +453,12 @@ export default function SettingsPage() {
                     </Button>
                     <Divider />
                     <BlockStack gap="300">
-                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Everything in Standard</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">All Standard features included</Text></InlineStack>
                       <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block Military Addresses (APO/FPO)</Text></InlineStack>
-                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block by specific States or Regions</Text></InlineStack>
-                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block custom Zip Codes / Prefixes</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block specific States & Regions</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block custom Zip Codes</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Customizable error messages</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Priority Email Support</Text></InlineStack>
                     </BlockStack>
                   </BlockStack>
                 </Card>
@@ -671,13 +673,30 @@ export default function SettingsPage() {
                   <InlineStack gap="200" blockAlign="center">
                     <Text as="span">✅</Text>
                     <Text as="span" variant="bodySm">
-                      P.O. Box detection (14+ patterns)
+                      Block P.O. Boxes natively at checkout
                     </Text>
                   </InlineStack>
                   <InlineStack gap="200" blockAlign="center">
                     <Text as="span">✅</Text>
                     <Text as="span" variant="bodySm">
-                      Real-time validation at checkout
+                      Advanced 14+ detection patterns
+                    </Text>
+                  </InlineStack>
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text as="span">✅</Text>
+                    <Text as="span" variant="bodySm">
+                      Email Support
+                    </Text>
+                  </InlineStack>
+
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text as="span">{isPremium ? "✅" : "🔒"}</Text>
+                    <Text
+                      as="span"
+                      variant="bodySm"
+                      tone={isPremium ? undefined : "subdued"}
+                    >
+                      Block Military Addresses (APO/FPO)
                     </Text>
                   </InlineStack>
                   <InlineStack gap="200" blockAlign="center">
@@ -687,7 +706,7 @@ export default function SettingsPage() {
                       variant="bodySm"
                       tone={isPremium ? undefined : "subdued"}
                     >
-                      Block Military Addresses (APO/FPO/DPO)
+                      Block specific States & Regions
                     </Text>
                   </InlineStack>
                   <InlineStack gap="200" blockAlign="center">
@@ -697,7 +716,27 @@ export default function SettingsPage() {
                       variant="bodySm"
                       tone={isPremium ? undefined : "subdued"}
                     >
-                      Block by State / Zip Code
+                      Block custom Zip Codes
+                    </Text>
+                  </InlineStack>
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text as="span">{isPremium ? "✅" : "🔒"}</Text>
+                    <Text
+                      as="span"
+                      variant="bodySm"
+                      tone={isPremium ? undefined : "subdued"}
+                    >
+                      Customizable error messages
+                    </Text>
+                  </InlineStack>
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text as="span">{isPremium ? "✅" : "🔒"}</Text>
+                    <Text
+                      as="span"
+                      variant="bodySm"
+                      tone={isPremium ? undefined : "subdued"}
+                    >
+                      Priority Email Support
                     </Text>
                   </InlineStack>
                 </BlockStack>
