@@ -24,6 +24,7 @@ import {
   Box,
   Tooltip,
   Tag,
+  InlineGrid,
 } from "@shopify/polaris";
 
 import { authenticate } from "~/shopify.server";
@@ -382,52 +383,87 @@ export default function SettingsPage() {
 
   if (!hasPlan) {
     return (
-      <Page title="Select a Plan">
-        <Layout>
-          <Layout.Section>
-            <BlockStack gap="500">
-              <Text as="h1" variant="headingLg">Choose a Plan to Continue</Text>
-              <InlineStack gap="400">
+      <Page>
+        <Box paddingBlockStart="1000" paddingBlockEnd="1000">
+          <BlockStack gap="800" align="center" inlineAlign="center">
+            <BlockStack gap="200" inlineAlign="center">
+              <Text as="h1" variant="heading2xl" alignment="center">
+                Upgrade to protect your checkouts
+              </Text>
+              <Text as="p" variant="bodyLg" tone="subdued" alignment="center">
+                Select a plan to block invalid addresses and stop shipping delays.
+              </Text>
+            </BlockStack>
+
+            <Box minWidth="800px">
+              <InlineGrid columns={2} gap="400">
                 <Card>
-                  <BlockStack gap="400">
-                    <Text as="h2" variant="headingMd">Standard Plan</Text>
-                    <Text as="p" variant="headingXl">$4.99 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
-                    <Text as="p" tone="subdued">Includes a 14-day free trial.</Text>
-                    <Divider />
+                  <BlockStack gap="500">
                     <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">P.O. Box detection</Text></InlineStack>
-                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Real-time validation</Text></InlineStack>
+                      <Text as="h2" variant="headingLg">Standard</Text>
+                      <Text as="p" tone="subdued">Essential protection for small stores.</Text>
                     </BlockStack>
-                    <Button onClick={() => {
-                          const formData = new FormData();
-                          formData.set("intent", "upgrade_to_standart");
-                          submit(formData, { method: "POST" });
-                        }} variant="primary" loading={isSubmitting}>Start 14-Day Trial</Button>
+                    <Box>
+                      <Text as="p" variant="heading3xl">$4.99 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
+                    </Box>
+                    <Button 
+                      size="large"
+                      onClick={() => {
+                        const formData = new FormData();
+                        formData.set("intent", "upgrade_to_standart");
+                        submit(formData, { method: "POST" });
+                      }} 
+                      variant="secondary" 
+                      loading={isSubmitting}
+                    >
+                      Start 14-Day Trial
+                    </Button>
+                    <Divider />
+                    <BlockStack gap="300">
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">P.O. Box detection (14+ patterns)</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Real-time checkout validation</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Customizable error messages</Text></InlineStack>
+                    </BlockStack>
                   </BlockStack>
                 </Card>
 
-                <Card>
-                  <BlockStack gap="400">
-                    <Text as="h2" variant="headingMd">Premium Plan</Text>
-                    <Text as="p" variant="headingXl">$9.99 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
-                    <Text as="p" tone="subdued">Advanced protection. Includes a 14-day free trial.</Text>
+                <Card background="bg-surface-secondary">
+                  <BlockStack gap="500">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <BlockStack gap="200">
+                        <Text as="h2" variant="headingLg">Premium</Text>
+                        <Text as="p" tone="subdued">Advanced control & region blocking.</Text>
+                      </BlockStack>
+                      <Badge tone="success">Recommended</Badge>
+                    </InlineStack>
+                    <Box>
+                      <Text as="p" variant="heading3xl">$9.99 <Text as="span" variant="bodyMd" tone="subdued">/ month</Text></Text>
+                    </Box>
+                    <Button 
+                      size="large"
+                      onClick={() => {
+                        const formData = new FormData();
+                        formData.set("intent", "upgrade_to_premium");
+                        submit(formData, { method: "POST" });
+                      }} 
+                      variant="primary" 
+                      loading={isSubmitting}
+                    >
+                      Start 14-Day Trial
+                    </Button>
                     <Divider />
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Everything in Standard</Text></InlineStack>
-                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Block Military Addresses</Text></InlineStack>
-                      <InlineStack gap="200" blockAlign="center"><Text as="span">✅</Text><Text as="span">Block by State / Zip Code</Text></InlineStack>
+                    <BlockStack gap="300">
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Everything in Standard</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block Military Addresses (APO/FPO)</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block by specific States or Regions</Text></InlineStack>
+                      <InlineStack gap="200" blockAlign="center" wrap={false}><Text as="span">✅</Text><Text as="span">Block custom Zip Codes / Prefixes</Text></InlineStack>
                     </BlockStack>
-                    <Button onClick={() => {
-                          const formData = new FormData();
-                          formData.set("intent", "upgrade_to_premium");
-                          submit(formData, { method: "POST" });
-                        }} variant="primary" loading={isSubmitting}>Start 14-Day Trial</Button>
                   </BlockStack>
                 </Card>
-              </InlineStack>
-            </BlockStack>
-          </Layout.Section>
-        </Layout>
+              </InlineGrid>
+            </Box>
+          </BlockStack>
+        </Box>
       </Page>
     );
   }
