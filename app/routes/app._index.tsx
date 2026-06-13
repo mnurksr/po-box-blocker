@@ -47,7 +47,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Sync billing status
   const billingCheck = await billing.check({
     plans: [STANDARD_PLAN, PREMIUM_PLAN],
-    isTest: true,
+    isTest: false,
   });
   
   const hasPremium = billingCheck.appSubscriptions?.some(sub => sub.name === PREMIUM_PLAN) || false;
@@ -184,8 +184,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     try {
       await billing.require({
         plans: [PREMIUM_PLAN],
-        isTest: true,
-        onFailure: async () => billing.request({ plan: PREMIUM_PLAN, isTest: true }),
+        isTest: false,
+        onFailure: async () => billing.request({ plan: PREMIUM_PLAN, isTest: false }),
       });
       return null;
     } catch (e: any) {
@@ -198,8 +198,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     try {
       await billing.require({
         plans: [STANDARD_PLAN],
-        isTest: true,
-        onFailure: async () => billing.request({ plan: STANDARD_PLAN, isTest: true }),
+        isTest: false,
+        onFailure: async () => billing.request({ plan: STANDARD_PLAN, isTest: false }),
       });
       return null;
     } catch (e: any) {
@@ -238,7 +238,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     // Write settings to AppInstallation Metafield for Checkout Validation Extension
-    const billingCheck = await billing.check({ plans: [STANDARD_PLAN, PREMIUM_PLAN], isTest: true });
+    const billingCheck = await billing.check({ plans: [STANDARD_PLAN, PREMIUM_PLAN], isTest: false });
     const isPremium = billingCheck.appSubscriptions?.some(sub => sub.name === PREMIUM_PLAN) || false;
 
     try {
